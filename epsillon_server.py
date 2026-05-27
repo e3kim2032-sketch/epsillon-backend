@@ -15,7 +15,7 @@ from pathlib import Path
 from fastapi import FastAPI, UploadFile, File, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-import google.generativeai as genai
+from groq import Groq
 
 # ─── Load .env ────────────────────────────────────────────────────────────
 
