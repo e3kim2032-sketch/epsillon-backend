@@ -121,7 +121,7 @@ conversation_history: list[dict] = []
 
 # ─── Routes ───────────────────────────────────────────────────────────────
 
-@app.get("/")
+@app.api_route("/", methods=["GET", "HEAD"])
 def root():
     return {"status": "Epsillon backend running", "model": "gemini-2.0-flash"}
 
