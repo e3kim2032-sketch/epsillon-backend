@@ -37,8 +37,8 @@ _load_env()
 # ─── Gemini client ────────────────────────────────────────────────────────
 
 GEMINI_KEY = os.getenv("GEMINI_API_KEY", "")
-genai.configure(api_key=GEMINI_KEY)
-model = genai.GenerativeModel("gemini-2.0-flash")
+client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+MODEL = "llama-3.3-70b-versatile"
 
 # ─── Storage paths ────────────────────────────────────────────────────────
 
@@ -284,27 +284,21 @@ async def websocket_endpoint(websocket: WebSocket):
 def _chat(user_text: str) -> str:
     global conversation_history
     conversation_history.append({"role": "user", "content": user_text})
-
-    # Build Gemini chat with history
-    history = []
-    for msg in conversation_history[-20:]:
-        role = "user" if msg["role"] == "user" else "model"
-        history.append({"role": role, "parts": [msg["content"]]})
-
     system = build_system_prompt()
-    chat_session = model.start_chat(history=history[:-1])
-    response = chat_session.send_message(
-        f"[SYSTEM: {system}]\n\n{user_text}"
+    messages = [{"role": "system", "content": system}]
+    for msg in conversation_history[-20:]:
+        messages.append({"role": msg["role"], "content": msg["content"]})
+    response = client.chat.completions.create(
+        model=MODEL,
+        messages=messages,
+        max_tokens=200,
     )
-
-    reply = response.text.strip()
+    reply = response.choices[0].message.content.strip()
     conversation_history.append({"role": "assistant", "content": reply})
-
     if "[[REMEMBER:" in reply:
         fact = reply.split("[[REMEMBER:")[1].split("]]")[0].strip()
         mem = load_memory()
         mem.append(fact)
         save_memory(mem)
         reply = re.sub(r'\[\[REMEMBER:.*?\]\]', '', reply).strip()
-
     return reply
