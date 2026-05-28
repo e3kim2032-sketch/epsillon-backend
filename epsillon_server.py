@@ -290,9 +290,34 @@ async def websocket_endpoint(websocket: WebSocket):
 
 # ─── LLM helper ───────────────────────────────────────────────────────────
 
+def _needs_search(text: str) -> bool:
+    """Detect if user is asking about current info."""
+    keywords = ["weather", "temperature", "forecast", "news", "today", "current",
+                "latest", "now", "price", "stock", "score", "who won", "happening",
+                "right now", "this week", "yesterday"]
+    lo = text.lower()
+    return any(k in lo for k in keywords)
+
+
+def _search(query: str) -> str:
+    """Quick web search via Tavily."""
+    try:
+        result = tavily.search(query=query, search_depth="basic", max_results=3)
+        snippets = []
+        for r in result.get("results", [])[:3]:
+            snippets.append(f"- {r.get('content', '')[:200]}")
+        return "\n".join(snippets) if snippets else "No results."
+    except Exception as e:
+        return f"Search failed: {e}"
+
+
 def _chat(user_text: str) -> str:
     global conversation_history
     conversation_history.append({"role": "user", "content": user_text})
+    if _needs_search(user_text):
+        search_results = _search(user_text)
+        user_text = f"{user_text}\n\n[Live search results:\n{search_results}]\n\nAnswer using these results."
+        conversation_history[-1] = {"role": "user", "content": user_text}
     system = build_system_prompt()
     messages = [{"role": "system", "content": system}]
     for msg in conversation_history[-20:]:
