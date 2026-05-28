@@ -41,7 +41,8 @@ _load_env()
 
 GEMINI_KEY = os.getenv("GEMINI_API_KEY", "")
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-MODEL = "llama-3.3-70b-versatile"
+tavily = TavilyClient(api_key=os.getenv("TAVILY_API_KEY"))
+MODEL = "llama-3.1-8b-instant"
 
 # ─── Storage paths ────────────────────────────────────────────────────────
 
