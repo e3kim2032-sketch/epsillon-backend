@@ -12,7 +12,10 @@ import tempfile
 from datetime import date, datetime
 from pathlib import Path
 
-from fastapi import FastAPI, UploadFile, File, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, UploadFile, File, WebSocket, WebSocketDisconnect, Request
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from groq import Groq
@@ -108,6 +111,10 @@ def build_system_prompt() -> str:
 
 app = FastAPI(title="Epsillon Backend")
 
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -126,7 +133,8 @@ def root():
     return {"status": "Epsillon backend running", "model": "gemini-2.0-flash"}
 
 @app.post("/epsillon/text")
-async def handle_text(body: dict):
+@limiter.limit("10/minute")
+async def handle_text(request: Request, body: dict):
     text = body.get("message", "").strip()
     if not text:
         return JSONResponse({"response": "Empty message."})
