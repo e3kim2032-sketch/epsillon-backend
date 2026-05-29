@@ -332,7 +332,7 @@ def _chat(user_text: str) -> str:
     response = client.chat.completions.create(
         model=MODEL,
         messages=messages,
-        max_tokens=200,
+        max_tokens=800,
     )
     reply = response.choices[0].message.content.strip()
     conversation_history.append({"role": "assistant", "content": reply})
